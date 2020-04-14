@@ -58,12 +58,12 @@ impl Layer1Provider {
 }
 
 impl Layer1Provider {
-    pub fn hello (&self, actor:&str, req: CustomMessage ) -> Result<Vec<u8>, Box<dyn Error>>{
+    pub fn hello (&self, actor:&str, req: Layer1Message ) -> Result<Vec<u8>, Box<dyn Error>>{
         println!("Layer1Provider actor:{} called hello.", actor);
         let layer1 = self.layer1.read().unwrap(); 
-        let res = layer1.hello(actor, req.super_secret);
+        let res = layer1.hello(actor, req.key);
         println!("return from layer1.hello: {:?}", res);
-        Ok(serialize(CustomReply{reply_value: res})?)
+        Ok(serialize(Layer1Reply{value: res})?)
     }
 }
 
@@ -102,14 +102,12 @@ impl CapabilityProvider for Layer1Provider {
     }
 }
 
-
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CustomMessage {
-    pub super_secret: i32,
+pub struct Layer1Message {
+    pub key: i32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CustomReply {
-    pub reply_value: i32,
+pub struct Layer1Reply {
+    pub value : i32,
 }
