@@ -8,11 +8,13 @@ extern crate serde_derive;
 
 #[macro_use]
 extern crate serde_json;
+
 mod layer1;
+
 use crate::layer1::Layer1;
 
 use codec::capabilities::{CapabilityProvider, Dispatcher, NullDispatcher};
-use codec::core::{OP_BIND_ACTOR};
+use codec::core::OP_BIND_ACTOR;
 use wascc_codec::core::CapabilityConfiguration;
 use codec::{serialize, deserialize};
 use std::error::Error;
@@ -23,7 +25,7 @@ const SYSTEM_ACTOR: &str = "system";
 //#[cfg(not(feature = "static_plugin"))]
 capability_provider!(Layer1Provider, Layer1Provider::new);
 
-const CAPABILITY_ID: &str = "tea:layer1"; 
+const CAPABILITY_ID: &str = "tea:layer1";
 
 pub struct Layer1Provider {
     dispatcher: RwLock<Box<dyn Dispatcher>>,
@@ -34,8 +36,8 @@ impl Default for Layer1Provider {
     fn default() -> Self {
         let _ = env_logger::try_init();
 
-        Layer1Provider { 
-            dispatcher: RwLock::new(Box::new(NullDispatcher::new())),           
+        Layer1Provider {
+            dispatcher: RwLock::new(Box::new(NullDispatcher::new())),
             layer1: RwLock::new(Layer1::new()),
         }
     }
@@ -48,22 +50,22 @@ impl Layer1Provider {
 
     fn configure(
         &self,
-        _config: CapabilityConfiguration
+        _config: CapabilityConfiguration,
     ) -> Result<Vec<u8>, Box<dyn Error>> {
-        
+
         //TODO: Config here
 
         Ok(vec![])
-    }    
+    }
 }
 
 impl Layer1Provider {
-    pub fn hello (&self, actor:&str, req: Layer1Message ) -> Result<Vec<u8>, Box<dyn Error>>{
-        println!("Layer1Provider actor:{} called hello.", actor);
-        let layer1 = self.layer1.read().unwrap(); 
-        let res = layer1.hello(actor, req.key);
-        println!("return from layer1.hello: {:?}", res);
-        Ok(serialize(Layer1Reply{value: res})?)
+    pub fn tpm_info(&self, actor: &str, req: Layer1Message) -> Result<Vec<u8>, Box<dyn Error>> {
+        println!("Layer1Provider actor:{} called tpm_info.", actor);
+        let layer1 = self.layer1.read().unwrap();
+        let res = layer1.tpm_info(actor, req.key).unwrap();
+        println!("return from layer1.tpm_info: {:?}", res);
+        Ok(serialize(res)?)
     }
 }
 
@@ -83,7 +85,7 @@ impl CapabilityProvider for Layer1Provider {
     }
 
     fn name(&self) -> &'static str {
-        "TEA project: Layer One Provider" 
+        "TEA project: Layer One Provider"
     }
 
 
@@ -92,11 +94,11 @@ impl CapabilityProvider for Layer1Provider {
     fn handle_call(&self, actor: &str, op: &str, msg: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
         trace!("Received host call from {}, operation - {}", actor, op);
 
-        match op {            
-            OP_BIND_ACTOR if actor == SYSTEM_ACTOR => self.configure(deserialize(msg)?),            
-            layer1::OP_HELLO => {
-                self.hello(actor, deserialize(msg)?)
-            },
+        match op {
+            OP_BIND_ACTOR if actor == SYSTEM_ACTOR => self.configure(deserialize(msg)?),
+            layer1::OP_TPM_INFO => {
+                self.tpm_info(actor, deserialize(msg)?)
+            }
             _ => Err("bad dispatch".into()),
         }
     }
@@ -104,10 +106,10 @@ impl CapabilityProvider for Layer1Provider {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Layer1Message {
-    pub key: i32,
+    pub key: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Layer1Reply {
-    pub value : i32,
+    pub value: i32,
 }
